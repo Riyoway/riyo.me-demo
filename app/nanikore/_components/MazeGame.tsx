@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CSS3DRenderer, CSS3DSprite } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ interface MazeGameProps {
 
 export default function MazeGame({ onComplete }: MazeGameProps) {
   const router = useRouter();
+  const [isStarted, setIsStarted] = useState(false);
   const mazeContainerRef = useRef<HTMLDivElement>(null);
   const cssContainerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>(0);
@@ -183,7 +184,7 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
       
       const targetVel = inputDir.normalize().clone().applyQuaternion(camera.quaternion);
       targetVel.y = 0;
-      targetVel.multiplyScalar(0.4);
+      targetVel.multiplyScalar(0.15);
       moveState.current.velocity.lerp(targetVel, 0.08);
 
       if (!isColliding(camera.position.x + moveState.current.velocity.x, camera.position.z)) camera.position.x += moveState.current.velocity.x;
@@ -306,8 +307,36 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
 
   return (
     <>
-      <div ref={mazeContainerRef} onClick={() => mazeContainerRef.current?.querySelector('canvas')?.requestPointerLock()} className="absolute inset-0 z-40 flex items-center justify-center cursor-crosshair" />
+      <div 
+        ref={mazeContainerRef} 
+        onClick={() => {
+          mazeContainerRef.current?.querySelector('canvas')?.requestPointerLock();
+          setIsStarted(true);
+        }} 
+        className="absolute inset-0 z-40 flex items-center justify-center cursor-crosshair" 
+      />
       <div ref={cssContainerRef} className="absolute inset-0 z-[45] pointer-events-none" />
+      
+      {!isStarted && (
+        <div 
+          onClick={() => {
+            mazeContainerRef.current?.querySelector('canvas')?.requestPointerLock();
+            setIsStarted(true);
+          }}
+          className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center text-white p-4 text-center cursor-pointer"
+        >
+          <div className="mb-8 space-y-4">
+            <h2 className="text-4xl font-bold tracking-tighter animate-pulse" style={{ color: '#ff00c1' }}>MISSION</h2>
+            <p className="text-2xl font-mono">Find the key to the next page!</p>
+          </div>
+          <div className="mt-8 px-8 py-3 border-2 border-white/20 hover:border-[#ff00c1] hover:text-[#ff00c1] transition-colors cursor-pointer group">
+            <p className="text-lg font-bold tracking-widest uppercase">Click to Start</p>
+          </div>
+          <div className="mt-12 text-sm text-gray-500 font-mono">
+            WASD to Move | Mouse to Look
+          </div>
+        </div>
+      )}
     </>
   );
 }
