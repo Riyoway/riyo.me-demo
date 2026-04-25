@@ -12,6 +12,7 @@ interface MazeGameProps {
 export default function MazeGame({ onComplete }: MazeGameProps) {
   const router = useRouter();
   const [isStarted, setIsStarted] = useState(false);
+  const [isDead, setIsDead] = useState(false);
   const mazeContainerRef = useRef<HTMLDivElement>(null);
   const cssContainerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>(0);
@@ -272,10 +273,15 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
         bossChaser.sprite.element.style.opacity = bossVisible ? '1' : '0';
 
         // Collision with BOSS
-        if (dist < 2.0) {
-          cancelAnimationFrame(requestRef.current);
+        if (dist < 2.0 && !isDead) {
+          setIsDead(true);
           if (bossAudio.current) bossAudio.current.pause();
-          window.location.href = '/security'; // Fallback for push
+          const deathAudio = new Audio('/dead.mp3');
+          deathAudio.play().catch(() => {});
+          
+          setTimeout(() => {
+            window.location.href = '/security';
+          }, 1500);
           return;
         }
       }
@@ -285,7 +291,9 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
       cssRenderer.render(scene, camera);
       requestRef.current = requestAnimationFrame(animate);
     };
-    animate();
+    if (isStarted) {
+      animate();
+    }
 
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -303,7 +311,7 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
       if (bossAudio.current) bossAudio.current.pause();
       cancelAnimationFrame(requestRef.current);
     };
-  }, []);
+  }, [isStarted]);
 
   return (
     <>
@@ -323,18 +331,42 @@ export default function MazeGame({ onComplete }: MazeGameProps) {
             mazeContainerRef.current?.querySelector('canvas')?.requestPointerLock();
             setIsStarted(true);
           }}
-          className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center text-white p-4 text-center cursor-pointer"
+          className="absolute inset-0 z-[100] bg-[#c0c0c0] flex flex-col items-center justify-center text-black p-4 text-center font-serif border-4 border-white shadow-[inset_-2px_-2px_#808080,inset_2px_2px_#ffffff]"
         >
-          <div className="mb-8 space-y-4">
-            <h2 className="text-4xl font-bold tracking-tighter animate-pulse" style={{ color: '#ff00c1' }}>MISSION</h2>
-            <p className="text-2xl font-mono">Find the key to the next page!</p>
+          <div className="bg-white p-8 border-2 border-gray-800 shadow-lg max-w-md">
+            <h1 className="text-2xl font-bold mb-4 underline">MISSION BRIEFING</h1>
+            <p className="text-xl mb-6">Find the key to the next page!</p>
+            <button className="px-6 py-2 bg-gray-200 border-2 border-gray-800 active:bg-gray-400 font-bold">
+              START GAME
+            </button>
+            <div className="mt-6 text-xs text-left text-gray-600 border-t pt-2">
+              SYSTEM REQUIREMENTS:<br/>
+              - Mouse pointer lock capability<br/>
+              - WASD movement keys<br/>
+              - Courage
+            </div>
           </div>
-          <div className="mt-8 px-8 py-3 border-2 border-white/20 hover:border-[#ff00c1] hover:text-[#ff00c1] transition-colors cursor-pointer group">
-            <p className="text-lg font-bold tracking-widest uppercase">Click to Start</p>
-          </div>
-          <div className="mt-12 text-sm text-gray-500 font-mono">
-            WASD to Move | Mouse to Look
-          </div>
+        </div>
+      )}
+
+      {isDead && (
+        <div className="absolute inset-0 z-[200] bg-black flex items-center justify-center overflow-hidden">
+          <img 
+            src="/donate.png" 
+            className="w-full h-full object-cover animate-jumpscare" 
+            alt="DEAD"
+          />
+          <style jsx>{`
+            @keyframes jumpscare {
+              0% { transform: scale(1); filter: brightness(1); }
+              10% { transform: scale(1.2) rotate(2deg); filter: brightness(2) contrast(2); }
+              20% { transform: scale(1.1) rotate(-2deg); }
+              100% { transform: scale(1.5); filter: brightness(0.5); }
+            }
+            .animate-jumpscare {
+              animation: jumpscare 0.5s ease-out forwards;
+            }
+          `}</style>
         </div>
       )}
     </>
